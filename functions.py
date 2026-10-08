@@ -29,3 +29,15 @@ def pendulo():
 
     # Radianos informados em graus
     theta0 = np.radians(theta0_graus)
+
+    # Vetor de tempo. Progressão Aritmetica partindo de termo 0 e razão dt (Unidade 4, página 11)
+    t = np.arange(0.0, t_total, dt)
+    n = len(t)
+
+    # vetor para guardar as variaveis de estado (tamanho previsto)
+    theta = np.zeros(n)     # cria array de tamanho n prenchido com zeros
+    omega = np.zeros(n)
+
+    theta[0] = theta0 # variavel em radianos: precisa estar assim para não quebrar a formula
+    omega[0] = omega0
+
