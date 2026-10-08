@@ -41,3 +41,13 @@ def pendulo():
     theta[0] = theta0 # variavel em radianos: precisa estar assim para não quebrar a formula
     omega[0] = omega0
 
+    for i in range(n-1):
+        # 1) aceleração no instante i (equação do pêndulo)
+        alfa = -(g / L) * np.sin(theta[i]) - (b / m) * omega[i]
+
+        # 2) nova velocidade a partir da velocidade atual e da aceleração 
+        omega[i + 1] = omega[i] + alfa * dt
+
+        # 3) novo ângulo usando a velocidade NOVA (incrementação padrão)
+        theta[i + 1] = theta[i] + omega[i + 1] * dt
+
