@@ -51,3 +51,32 @@ def pendulo():
         # 3) novo ângulo usando a velocidade NOVA (incrementação padrão)
         theta[i + 1] = theta[i] + omega[i + 1] * dt
 
+    # Período teórico (vamos usar em pequenos angulos)
+    T_teorico = 2 * np.pi * np.sqrt(L / g)
+
+    # Período simulado(instantes em que θ passa de negativo para positivo)
+    # theta[:-1] é o valor antes de cada execução
+    # theta[1:] é o valor depois de cada exeucção
+    cruzamentos = np.where((theta[:-1] < 0) & (theta[1:] >= 0))[0] # onde o zero é cruzado na subida
+    if len(cruzamentos) >= 2:
+        # média dos intervalos entre cruzamentos consecutivos
+        T_simulado = np.mean(np.diff(t[cruzamentos]))
+    else:
+        T_simulado = None   # menos de uma oscilação completa não medimos
+
+    # Energia mecânica = cinética + potencial (altura zero no ponto mais baixo)
+    energia = 0.5 * m * (L * omega) ** 2 + m * g * L * (1 - np.cos(theta))
+
+    print("\n========== RESULTADOS — PÊNDULO ==========")
+    print(f"Período teórico (pequenos ângulos): {T_teorico:.4f} s")
+    if T_simulado is not None:
+        diferenca = (T_simulado - T_teorico) / T_teorico * 100
+        print(f"Período simulado:                   {T_simulado:.4f} s ({diferenca:+.2f}% vs teórico)")
+    else:
+        print("Período simulado:                   não medido (menos de uma oscilação)")
+    print(f"Ângulo máximo:                      {np.degrees(np.max(np.abs(theta))):.2f}°")
+    print(f"Ângulo final:                       {np.degrees(theta[-1]):.2f}°")
+    print(f"Energia mecânica inicial:           {energia[0]:.4f} J")
+    print(f"Energia mecânica final:             {energia[-1]:.4f} J")
+    print("==========================================")
+
