@@ -1,82 +1,95 @@
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 def read_param(message, default):
-    """Recebe um valor do usuário, se apertar Enter devolve o valor defauilt"""
+    # le um valor digitado; se apertar Enter, usa o valor padrao
     text = input(f"{message} [{default}]: ")
     if text == "":
         return default
     return float(text)
 
-def pendulo():
-    """Simulação do pêndulo"""
-    print("\nParâmetros do pêndulo (Enter = deafault)")
 
-    # Constantes da fórmila
+def pendulo():
+    print("\nParametros do pendulo (Enter mantem o padrao)")
+
+    # constantes do sistema
     L = read_param("Comprimento do fio L (m)", 1.0)
     g = read_param("Gravidade g (m/s^2)", 9.8)
     m = read_param("Massa m (kg)", 1.0)
 
-    # Atrito (sem atrito = 0)
+    # atrito, 0 = sem atrito
     b = read_param("Coeficiente de amortecimento b (kg/s)", 0.0)
 
-    # Estado inicial (equ. de seg. ordem)
-    theta0_graus = read_param("Ângulo incial 0 (graud)", 30.0)
-    omega = read_param("Velocidade angular inicial w0 (rad/s)", 0.0)
+    # estado inicial (eq. de 2a ordem precisa de angulo e velocidade)
+    theta0_graus = read_param("Angulo inicial theta0 (graus)", 30.0)
+    omega0 = read_param("Velocidade angular inicial w0 (rad/s)", 0.0)
 
-    # Discretização: constantes da simulação
-    t_total = 20.0  # tmepo total (s)
-    dt = 0.001      # passo de tempo(s)
+    # parametros da simulacao
+    t_total = 20.0  # tempo total (s)
+    dt = 0.001      # passo de tempo (s)
 
-    # Radianos informados em graus
-    theta0 = np.radians(theta0_graus)
+    theta0 = np.radians(theta0_graus)  # a formula usa radianos
 
-    # Vetor de tempo. Progressão Aritmetica partindo de termo 0 e razão dt (Unidade 4, página 11)
+    # vetor de tempo: PA com primeiro termo 0 e razao dt (Unidade 4, p. 11)
     t = np.arange(0.0, t_total, dt)
     n = len(t)
 
-    # vetor para guardar as variaveis de estado (tamanho previsto)
-    theta = np.zeros(n)     # cria array de tamanho n prenchido com zeros
+    # vetores de estado, ja com o tamanho final
+    theta = np.zeros(n)
     omega = np.zeros(n)
 
-    theta[0] = theta0 # variavel em radianos: precisa estar assim para não quebrar a formula
+    # condicoes iniciais
+    theta[0] = theta0
     omega[0] = omega0
 
-    for i in range(n-1):
-        # 1) aceleração no instante i (equação do pêndulo)
+    # Euler-Cromer: calcula a velocidade nova e usa ela pra atualizar o angulo
+    for i in range(n - 1):
         alfa = -(g / L) * np.sin(theta[i]) - (b / m) * omega[i]
-
-        # 2) nova velocidade a partir da velocidade atual e da aceleração 
         omega[i + 1] = omega[i] + alfa * dt
-
-        # 3) novo ângulo usando a velocidade NOVA (incrementação padrão)
         theta[i + 1] = theta[i] + omega[i + 1] * dt
 
-    # Período teórico (vamos usar em pequenos angulos)
+    # periodo teorico, so vale pra angulos pequenos
     T_teorico = 2 * np.pi * np.sqrt(L / g)
 
-    # Período simulado(instantes em que θ passa de negativo para positivo)
-    # theta[:-1] é o valor antes de cada execução
-    # theta[1:] é o valor depois de cada exeucção
-    cruzamentos = np.where((theta[:-1] < 0) & (theta[1:] >= 0))[0] # onde o zero é cruzado na subida
+    # periodo simulado: tempo entre as passagens de theta por zero subindo
+    cruzamentos = np.where((theta[:-1] < 0) & (theta[1:] >= 0))[0]
     if len(cruzamentos) >= 2:
-        # média dos intervalos entre cruzamentos consecutivos
         T_simulado = np.mean(np.diff(t[cruzamentos]))
     else:
-        T_simulado = None   # menos de uma oscilação completa não medimos
+        T_simulado = None  # nao deu uma oscilacao completa
 
-    # Energia mecânica = cinética + potencial (altura zero no ponto mais baixo)
+    # energia mecanica = cinetica + potencial (altura 0 no ponto mais baixo)
     energia = 0.5 * m * (L * omega) ** 2 + m * g * L * (1 - np.cos(theta))
 
-    print("\n========== RESULTADOS — PÊNDULO ==========")
-    print(f"Período teórico (pequenos ângulos): {T_teorico:.4f} s")
+    print("\n--- Resultados: pendulo ---")
+    print(f"Periodo teorico (angulos pequenos): {T_teorico:.4f} s")
     if T_simulado is not None:
         diferenca = (T_simulado - T_teorico) / T_teorico * 100
-        print(f"Período simulado:                   {T_simulado:.4f} s ({diferenca:+.2f}% vs teórico)")
+        print(f"Periodo simulado: {T_simulado:.4f} s ({diferenca:+.2f}% em relacao ao teorico)")
     else:
-        print("Período simulado:                   não medido (menos de uma oscilação)")
-    print(f"Ângulo máximo:                      {np.degrees(np.max(np.abs(theta))):.2f}°")
-    print(f"Ângulo final:                       {np.degrees(theta[-1]):.2f}°")
-    print(f"Energia mecânica inicial:           {energia[0]:.4f} J")
-    print(f"Energia mecânica final:             {energia[-1]:.4f} J")
-    print("==========================================")
+        print("Periodo simulado: nao medido (menos de uma oscilacao)")
+    print(f"Angulo maximo: {np.degrees(np.max(np.abs(theta))):.2f} graus")
+    print(f"Angulo final: {np.degrees(theta[-1]):.2f} graus")
+    print(f"Energia inicial: {energia[0]:.4f} J")
+    print(f"Energia final: {energia[-1]:.4f} J\n")
 
+    # graficos de angulo, velocidade e energia no mesmo eixo de tempo
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(9, 8), sharex=True)
+    fig.suptitle(f"Pendulo (L={L} m, m={m} kg, theta0={theta0_graus} graus, b={b} kg/s)")
+
+    ax1.plot(t, np.degrees(theta))
+    ax1.set_ylabel("theta (graus)")
+    ax1.grid(True)
+
+    ax2.plot(t, omega, color="tab:orange")
+    ax2.set_ylabel("w (rad/s)")
+    ax2.grid(True)
+
+    ax3.plot(t, energia, color="tab:green")
+    ax3.set_ylabel("Energia (J)")
+    ax3.set_xlabel("Tempo (s)")
+    ax3.grid(True)
+
+    plt.tight_layout()
+    plt.show()
